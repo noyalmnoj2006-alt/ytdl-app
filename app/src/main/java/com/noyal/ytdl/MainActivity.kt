@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 YoutubeDL.getInstance().init(application)
                 FFmpeg.getInstance().init(application)
-try { say("Updating..."); YoutubeDL.getInstance().updateYoutubeDL(application, YoutubeDL.UpdateChannel.NIGHTLY) } catch (e: Exception) { say("Update failed: ${e.message}") }
+        val upd = try { say("Updating..."); YoutubeDL.getInstance().updateYoutubeDL(application, YoutubeDL.UpdateChannel.NIGHTLY).toString() } catch (e: Exception) { "FAILED " + e.message }
                 say("Ready")
             } catch (e: Exception) {
                 say("Init failed: ${e.message}")
