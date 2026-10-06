@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 @app.route("/health")
 def health():
-retur njsonify({"status": "ok"})
+retur jsonify({"status": "ok"})
 
 @app.route("/download", methods=["POST"])
 def download():
