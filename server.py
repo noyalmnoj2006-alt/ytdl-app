@@ -5,7 +5,11 @@ import tempfile
 import threading
 import shutil
 
-app = Flask(name)
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "YT Downloader server is running"
 
 @app.route("/")
 def home():
