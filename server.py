@@ -8,9 +8,7 @@ import shutil
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return "YT Downloader server is running"
+
 
 @app.route("/health")
 def health():
