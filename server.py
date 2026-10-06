@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_file
 import os
 import subprocess
@@ -11,10 +12,10 @@ app = Flask(__name__)
 def home():
     return "YT Downloader server is running"
 
-
-@app.route("/")
-def home():
-    return "YT Downloader server is running"
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
+    
     
 
 @app.route("/health")
