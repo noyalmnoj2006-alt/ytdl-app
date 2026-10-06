@@ -51,7 +51,7 @@ def download():
                 f"bestvideo[height<={height}]+bestaudio/best[height<={height}]"
             ]
         else:
-            cmd += ["-f", "best"]
+            cmd += ["-f", "bv*+ba/b"]
 
         cmd += ["--", url]
 
