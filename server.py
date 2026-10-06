@@ -34,7 +34,13 @@ def download():
 
     try:
         output = os.path.join(folder, "%(title).100s.%(ext)s")
-        cmd = ["yt-dlp", "--no-playlist", "-o", output]
+        cmd = [
+    "yt-dlp",
+    "--no-playlist",
+    "--remote-components", "ejs:npm",
+    "--js-runtimes", "deno",
+    "-o", output,
+]
 
         if mode == "audio":
             cmd += ["-x", "--audio-format", "mp3"]
