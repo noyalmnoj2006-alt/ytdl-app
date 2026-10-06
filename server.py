@@ -58,7 +58,30 @@ def download():
         result = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,
+            text=True,response = send_file(
+            filepath,
+            as_attachment=True,
+            download_name=os.path.basename(filepath)
+        )
+        response.call_on_close(
+            lambda: shutil.rmtree(folder, ignore_errors=True)
+        )
+        return response
+
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(folder, ignore_errors=True)
+        return jsonify({"error": "Download timed out"}), 504
+
+    except Exception as exc:
+        shutil.rmtree(folder, ignore_errors=True)
+        return jsonify({"error": str(exc)[:500]}), 500
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000))
+    )
             timeout=600
         )
 
@@ -85,22 +108,4 @@ def download():
             as_attachment=True,
             download_name=os.path.basename(filepath)
         )
-        response.call_on_close(
-            lambda: shutil.rmtree(folder, ignore_errors=True)
-        )
-        return response
-
-    except subprocess.TimeoutExpired:
-        shutil.rmtree(folder, ignore_errors=True)
-        return jsonify({"error": "Download timed out"}), 504
-
-    except Exception as exc:
-        shutil.rmtree(folder, ignore_errors=True)
-        return jsonify({"error": str(exc)[:500]}), 500
-
-
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 10000))
-    )
+        
