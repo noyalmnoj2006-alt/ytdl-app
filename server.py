@@ -72,8 +72,6 @@ try:
 
     response.call_on_close(
         lambda: shutil.rmtree(folder, ignore_errors=True)
-    )
-    return response
 
 except subprocess.TimeoutExpired:
     shutil.rmtree(folder, ignore_errors=True)
