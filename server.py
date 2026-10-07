@@ -25,6 +25,8 @@ def health():
 
 @app.route("/download", methods=["POST"])
 def download():
+    print("DOWNLOAD REQUEST RECEIVED", flush=True)
+    data = request.get_json(silent=True) or {}
     data = request.get_json(silent=True) or {}
 
     url = data.get("url", "").strip()
