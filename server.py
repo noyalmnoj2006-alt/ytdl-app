@@ -1,18 +1,25 @@
-from flask import Flask, request, jsonify, send_file
+
+
 import os
+import shutil
 import subprocess
 import tempfile
-import shutil
+from flask import Flask, request, jsonify, send_file, after_this_request
 
 app = Flask(__name__)
 
+DOWNLOAD_TIMEOUT = 600
 
-@app.route("/")
+
+@app.route("/", methods=["GET"])
 def home():
-    return "YT Downloader server is running"
+    return jsonify({
+        "status": "ok",
+        "service": "YT Downloader API"
+    })
 
 
-@app.route("/health")
+@app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
 
@@ -20,86 +27,62 @@ def health():
 @app.route("/download", methods=["POST"])
 def download():
     data = request.get_json(silent=True) or {}
+
     url = data.get("url", "").strip()
-    mode = data.get("mode", "video")
-    quality = data.get("quality", "best")
+    mode = data.get("mode", "video").lower()
+    quality = data.get("quality", "720p").lower()
 
     if not url.startswith(("https://", "http://")):
-        return jsonify({"error": "Enter a valid URL"}), 400
+        return jsonify({"error": "Enter a valid video URL"}), 400
 
     if mode not in ("video", "audio"):
-        return jsonify({"error": "Invalid download mode"}), 400
+        return jsonify({"error": "Mode must be video or audio"}), 400
+
+    if quality not in ("1080p", "720p", "480p", "360p"):
+        quality = "720p"
 
     folder = tempfile.mkdtemp(prefix="ytdl_")
+    output = os.path.join(folder, "download.%(ext)s")
+
+    cmd = [
+        "yt-dlp",
+        "--no-playlist",
+        "--remote-components", "ejs:npm",
+        "--js-runtimes", "deno",
+        "--socket-timeout", "30",
+        "-o", output,
+    ]
+
+    if mode == "audio":
+        cmd += ["-x", "--audio-format", "mp3"]
+    else:
+        height = quality[:-1]
+        cmd += [
+            "-f",
+            f"bv*[height<={height}]+ba/b[height<={height}]/b",
+            "--merge-output-format", "mp4",
+        ]
+
+    cmd += ["--", url]
 
     try:
-        output = os.path.join(folder, "%(title).100s.%(ext)s")
-        cmd = [
-    "yt-dlp",
-    "--no-playlist",
-    "--remote-components", "ejs:npm",
-    "--js-runtimes", "deno",
-    "-o", output,
-]
-
-        if mode == "audio":
-            cmd += ["-x", "--audio-format", "mp3"]
-        elif quality in ("1080p", "720p", "480p", "360p"):
-            height = quality[:-1]
-            cmd += [
-                "-f",
-                f"bestvideo[height<={height}]+bestaudio/best[height<={height}]"
-            ]
-        else:
-            cmd += ["-f", "bv*+ba/b"]
-
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-        )
-
-        response = send_file(
-            filepath,
-            as_attachment=True,
-            download_name=os.path.basename(filepath)
-        )
-
-        cmd += ["--", url]
-
-           )
-        response.call_on_close(
-            lambda: shutil.rmtree(folder, ignore_errors=True)
-        )
-        return response
-
-    except subprocess.TimeoutExpired:
-        shutil.rmtree(folder, ignore_errors=True)
-        return jsonify({"error": "Download timed out"}), 504
-
-    except Exception as exc:
-        shutil.rmtree(folder, ignore_errors=True)
-        return jsonify({"error": str(exc)[:500]}), 500
-
-
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 10000))
-    )
-            timeout=600
+            timeout=DOWNLOAD_TIMEOUT,
         )
 
         if result.returncode != 0:
-            error = result.stderr[-1500:]
+            error = (result.stderr or result.stdout or
+                     "Download failed")[-1500:]
             shutil.rmtree(folder, ignore_errors=True)
-            return jsonify({"error": error}), 500
+            return jsonify({"error": error}), 502
 
         files = [
             os.path.join(folder, name)
             for name in os.listdir(folder)
             if os.path.isfile(os.path.join(folder, name))
-            and not name.endswith((".part", ".ytdl"))
         ]
 
         if not files:
@@ -107,10 +90,34 @@ if __name__ == "__main__":
             return jsonify({"error": "No output file was created"}), 500
 
         filepath = max(files, key=os.path.getsize)
+        filename = "audio.mp3" if mode == "audio" else "video.mp4"
 
-        response = send_file(
+        @after_this_request
+        def cleanup(response):
+            # Keep the file until the response has been sent.
+            response.call_on_close(
+                lambda: shutil.rmtree(folder, ignore_errors=True)
+            )
+            return response
+
+        return send_file(
             filepath,
             as_attachment=True,
-            download_name=os.path.basename(filepath)
+            download_name=filename,
         )
-        
+
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(folder, ignore_errors=True)
+        return jsonify({"error": "Download timed out"}), 504
+
+    except Exception:
+        app.logger.exception("Download failed")
+        shutil.rmtree(folder, ignore_errors=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "10000")),
+    )
