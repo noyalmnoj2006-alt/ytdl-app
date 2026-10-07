@@ -92,19 +92,15 @@ def download():
         filepath = max(files, key=os.path.getsize)
         filename = "audio.mp3" if mode == "audio" else "video.mp4"
 
-        @after_this_request
-        def cleanup(response):
-            # Keep the file until the response has been sent.
-            response.call_on_close(
-                lambda: shutil.rmtree(folder, ignore_errors=True)
-            )
-            return response
-
-        return send_file(
+                response = send_file(
             filepath,
             as_attachment=True,
             download_name=filename,
         )
+        response.call_on_close(
+            lambda: shutil.rmtree(folder, ignore_errors=True)
+        )
+        return response
 
     except subprocess.TimeoutExpired:
         shutil.rmtree(folder, ignore_errors=True)
