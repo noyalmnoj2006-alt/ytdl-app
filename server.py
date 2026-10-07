@@ -1,10 +1,9 @@
-
-
 import os
 import shutil
 import subprocess
 import tempfile
-from flask import Flask, request, jsonify, send_file, after_this_request
+
+from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__)
 
@@ -74,8 +73,7 @@ def download():
         )
 
         if result.returncode != 0:
-            error = (result.stderr or result.stdout or
-                     "Download failed")[-1500:]
+            error = (result.stderr or result.stdout or "Download failed")[-1500:]
             shutil.rmtree(folder, ignore_errors=True)
             return jsonify({"error": error}), 502
 
@@ -92,7 +90,7 @@ def download():
         filepath = max(files, key=os.path.getsize)
         filename = "audio.mp3" if mode == "audio" else "video.mp4"
 
-                response = send_file(
+        response = send_file(
             filepath,
             as_attachment=True,
             download_name=filename,
