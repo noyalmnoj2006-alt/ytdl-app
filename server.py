@@ -53,19 +53,21 @@ def download():
         else:
             cmd += ["-f", "bv*+ba/b"]
 
-        cmd += ["--", url]
-
         result = subprocess.run(
             cmd,
             capture_output=True,
-            text=True, 
-            
-        )  
-            response = send_file(
+            text=True,
+        )
+
+        response = send_file(
             filepath,
             as_attachment=True,
             download_name=os.path.basename(filepath)
         )
+
+        cmd += ["--", url]
+
+           )
         response.call_on_close(
             lambda: shutil.rmtree(folder, ignore_errors=True)
         )
