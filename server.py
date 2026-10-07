@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__)
 
-DOWNLOAD_TIMEOUT = 600
+DOWNLOAD_TIMEOUT = 900
 
 
 @app.route("/", methods=["GET"])
