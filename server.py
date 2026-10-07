@@ -58,7 +58,10 @@ def download():
         result = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,response = send_file(
+            text=True, 
+            
+        )  
+            response = send_file(
             filepath,
             as_attachment=True,
             download_name=os.path.basename(filepath)
